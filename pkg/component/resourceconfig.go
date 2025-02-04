@@ -81,6 +81,8 @@ const (
 	ClusterTypeSeed ClusterType = "seed"
 	// ClusterTypeShoot is a constant for the 'shoot' cluster type.
 	ClusterTypeShoot ClusterType = "shoot"
+	// ClusterTypeGarden is a constant for the `garden` cluster type.
+	ClusterTypeGarden ClusterType = "garden"
 )
 
 // DeployResourceConfigs deploys the provided ResourceConfigs <allResources> based on the ClusterType.
