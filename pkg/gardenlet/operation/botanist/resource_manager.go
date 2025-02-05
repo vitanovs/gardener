@@ -15,6 +15,7 @@ import (
 
 	v1beta1constants "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
 	v1beta1helper "github.com/gardener/gardener/pkg/apis/core/v1beta1/helper"
+	"github.com/gardener/gardener/pkg/component"
 	"github.com/gardener/gardener/pkg/component/gardener/resourcemanager"
 	"github.com/gardener/gardener/pkg/component/shared"
 	"github.com/gardener/gardener/pkg/logger"
@@ -41,6 +42,7 @@ func (b *Botanist) DefaultResourceManager() (resourcemanager.Interface, error) {
 		b.Shoot.SeedNamespace,
 		b.SecretsManager,
 		b.Seed.GetInfo().Status.ClusterIdentity,
+		component.ClusterTypeShoot,
 		defaultNotReadyTolerationSeconds,
 		defaultUnreachableTolerationSeconds,
 		version,
