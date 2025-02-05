@@ -258,6 +258,7 @@ func (r *Reconciler) newGardenerResourceManager(seed *gardencorev1beta1.Seed, se
 		additionalNetworkPolicyNamespaceSelectors,
 		seed.Spec.Provider.Zones,
 		nil,
+		component.ClusterTypeSeed,
 	)
 }
 
