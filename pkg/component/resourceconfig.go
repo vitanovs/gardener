@@ -99,7 +99,7 @@ func DeployResourceConfigs(
 	registry *managedresources.Registry,
 	allResources ResourceConfigs,
 ) error {
-	if clusterType == ClusterTypeSeed {
+	if clusterType == ClusterTypeSeed || clusterType == ClusterTypeGarden {
 		for _, r := range allResources {
 			if r.MutateFn != nil {
 				r.MutateFn()
@@ -159,7 +159,7 @@ func DestroyResourceConfigs(
 	managedResourceName string,
 	resourceConfigs ...ResourceConfigs,
 ) error {
-	if clusterType == ClusterTypeSeed {
+	if clusterType == ClusterTypeSeed || clusterType == ClusterTypeGarden {
 		return managedresources.DeleteForSeed(ctx, c, namespace, managedResourceName)
 	}
 
