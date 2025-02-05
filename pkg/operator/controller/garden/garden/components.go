@@ -367,6 +367,7 @@ func (r *Reconciler) newGardenerResourceManager(garden *operatorv1alpha1.Garden,
 		r.Config.Controllers.NetworkPolicy.AdditionalNamespaceSelectors,
 		garden.Spec.RuntimeCluster.Provider.Zones,
 		map[string]string{v1beta1constants.LabelCareConditionType: string(operatorv1alpha1.VirtualComponentsHealthy)},
+		component.ClusterTypeGarden,
 	)
 }
 
@@ -376,6 +377,7 @@ func (r *Reconciler) newVirtualGardenGardenerResourceManager(secretsManager secr
 		r.GardenNamespace,
 		secretsManager,
 		nil,
+		component.ClusterTypeGarden,
 		nil,
 		nil,
 		r.RuntimeVersion,
