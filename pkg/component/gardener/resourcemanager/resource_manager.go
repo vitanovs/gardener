@@ -49,6 +49,7 @@ import (
 	resourcemanagerconstants "github.com/gardener/gardener/pkg/component/gardener/resourcemanager/constants"
 	kubeapiserverconstants "github.com/gardener/gardener/pkg/component/kubernetes/apiserver/constants"
 	kubescheduler "github.com/gardener/gardener/pkg/component/kubernetes/scheduler"
+	"github.com/gardener/gardener/pkg/component/observability/monitoring/prometheus/garden"
 	"github.com/gardener/gardener/pkg/component/observability/monitoring/prometheus/seed"
 	"github.com/gardener/gardener/pkg/component/observability/monitoring/prometheus/shoot"
 	monitoringutils "github.com/gardener/gardener/pkg/component/observability/monitoring/utils"
@@ -240,6 +241,8 @@ type Values struct {
 	AlwaysUpdate *bool
 	// ClusterIdentity is the identity of the managing cluster.
 	ClusterIdentity *string
+	// ClusterType specifies the type of the cluster to which ResourceManager is being deployed.
+	ClusterType component.ClusterType
 	// ConcurrentSyncs are the number of worker threads for concurrent reconciliation of resources
 	ConcurrentSyncs *int
 	// DefaultNotReadyTolerationSeconds indicates the tolerationSeconds of the toleration for notReady:NoExecute
@@ -1120,6 +1123,9 @@ func (r *resourceManager) emptyPodDisruptionBudget() *policyv1.PodDisruptionBudg
 }
 
 func (r *resourceManager) getPrometheusLabel() string {
+	if r.values.ClusterType == component.ClusterTypeGarden {
+		return garden.Label
+	}
 	if r.values.TargetDiffersFromSourceCluster {
 		return shoot.Label
 	}
