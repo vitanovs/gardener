@@ -53,6 +53,7 @@ func NewRuntimeGardenerResourceManager(
 	additionalNetworkPolicyNamespaceSelectors []metav1.LabelSelector,
 	zones []string,
 	managedResourceLabels map[string]string,
+	clusterType component.ClusterType,
 ) (
 	component.DeployWaiter,
 	error,
@@ -94,6 +95,7 @@ func NewRuntimeGardenerResourceManager(
 		SyncPeriod:                          &metav1.Duration{Duration: time.Hour},
 		RuntimeKubernetesVersion:            runtimeVersion,
 		Zones:                               zones,
+		ClusterType:                         clusterType,
 	}), nil
 }
 
@@ -104,6 +106,7 @@ func NewTargetGardenerResourceManager(
 	namespaceName string,
 	secretsManager secretsmanager.Interface,
 	clusterIdentity *string,
+	clusterType component.ClusterType,
 	defaultNotReadyTolerationSeconds *int64,
 	defaultUnreachableTolerationSeconds *int64,
 	kubernetesVersion *semver.Version,
@@ -133,6 +136,7 @@ func NewTargetGardenerResourceManager(
 	cfg := resourcemanager.Values{
 		AlwaysUpdate:                         ptr.To(true),
 		ClusterIdentity:                      clusterIdentity,
+		ClusterType:                          clusterType,
 		ConcurrentSyncs:                      ptr.To(20),
 		DefaultNotReadyToleration:            defaultNotReadyTolerationSeconds,
 		DefaultUnreachableToleration:         defaultUnreachableTolerationSeconds,
