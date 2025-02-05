@@ -75,7 +75,7 @@ func (v *vpa) updaterResourceConfigs() component.ResourceConfigs {
 		{Obj: vpa, Class: component.Runtime, MutateFn: func() { v.reconcileUpdaterVPA(vpa, deployment) }},
 	}
 
-	if v.values.ClusterType == component.ClusterTypeSeed {
+	if v.values.ClusterType == component.ClusterTypeSeed || v.values.ClusterType == component.ClusterTypeGarden {
 		serviceAccount := v.emptyServiceAccount(updater)
 		configs = append(configs,
 			component.ResourceConfig{Obj: serviceAccount, Class: component.Application, MutateFn: func() { v.reconcileUpdaterServiceAccount(serviceAccount) }},

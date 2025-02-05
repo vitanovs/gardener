@@ -112,7 +112,7 @@ func (v *vpa) recommenderResourceConfigs() component.ResourceConfigs {
 		{Obj: serviceMonitor, Class: component.Runtime, MutateFn: func() { v.reconcileRecommenderServiceMonitor(serviceMonitor) }},
 	}
 
-	if v.values.ClusterType == component.ClusterTypeSeed {
+	if v.values.ClusterType == component.ClusterTypeSeed || v.values.ClusterType == component.ClusterTypeGarden {
 		// We do not deploy a vpa resource for a seed recommender, since that would cause the recommender to act on
 		// said vpa resource, and attempt to autoscale its own deployment. Self-scaling is not supported by VPA.
 		// This difference in behavior stems from the fact that a shoot VPA is controlling another k8s cluster,

@@ -26,6 +26,7 @@ import (
 	"github.com/gardener/gardener/pkg/client/kubernetes"
 	"github.com/gardener/gardener/pkg/component"
 	vpaconstants "github.com/gardener/gardener/pkg/component/autoscaling/vpa/constants"
+	"github.com/gardener/gardener/pkg/component/observability/monitoring/prometheus/garden"
 	"github.com/gardener/gardener/pkg/component/observability/monitoring/prometheus/seed"
 	"github.com/gardener/gardener/pkg/component/observability/monitoring/prometheus/shoot"
 	monitoringutils "github.com/gardener/gardener/pkg/component/observability/monitoring/utils"
@@ -134,7 +135,7 @@ func (v *vpa) Deploy(ctx context.Context) error {
 	}
 
 	var registry *managedresources.Registry
-	if v.values.ClusterType == component.ClusterTypeSeed {
+	if v.values.ClusterType == component.ClusterTypeSeed || v.values.ClusterType == component.ClusterTypeGarden {
 		registry = managedresources.NewRegistry(kubernetes.SeedScheme, kubernetes.SeedCodec, kubernetes.SeedSerializer)
 	} else {
 		registry = managedresources.NewRegistry(kubernetes.ShootScheme, kubernetes.ShootCodec, kubernetes.ShootSerializer)
@@ -198,7 +199,7 @@ func (v *vpa) GetValues() Values {
 }
 
 func (v *vpa) managedResourceName() string {
-	if v.values.ClusterType == component.ClusterTypeSeed {
+	if v.values.ClusterType == component.ClusterTypeSeed || v.values.ClusterType == component.ClusterTypeGarden {
 		return ManagedResourceControlName
 	}
 	return shootManagedResourceName
@@ -260,7 +261,7 @@ func (v *vpa) emptyMutatingWebhookConfiguration() *admissionregistrationv1.Mutat
 func (v *vpa) rbacNamePrefix() string {
 	prefix := "gardener.cloud:vpa:"
 
-	if v.values.ClusterType == component.ClusterTypeSeed {
+	if v.values.ClusterType == component.ClusterTypeSeed || v.values.ClusterType == component.ClusterTypeGarden {
 		return prefix + "source:"
 	}
 
@@ -268,7 +269,7 @@ func (v *vpa) rbacNamePrefix() string {
 }
 
 func (v *vpa) namespaceForApplicationClassResource() string {
-	if v.values.ClusterType == component.ClusterTypeSeed {
+	if v.values.ClusterType == component.ClusterTypeSeed || v.values.ClusterType == component.ClusterTypeGarden {
 		return v.namespace
 	}
 	return metav1.NamespaceSystem
@@ -287,7 +288,7 @@ func getAllLabels(appValue string) map[string]string {
 }
 
 func (v *vpa) getDeploymentLabels(appValue string) map[string]string {
-	if v.values.ClusterType == component.ClusterTypeSeed {
+	if v.values.ClusterType == component.ClusterTypeSeed || v.values.ClusterType == component.ClusterTypeGarden {
 		return utils.MergeStringMaps(getAppLabel(appValue), getRoleLabel())
 	}
 
@@ -320,6 +321,8 @@ func (v *vpa) injectAPIServerConnectionSpec(deployment *appsv1.Deployment, name 
 func (v *vpa) getPrometheusLabel() string {
 	if v.values.ClusterType == component.ClusterTypeSeed {
 		return seed.Label
+	} else if v.values.ClusterType == component.ClusterTypeGarden {
+		return garden.Label
 	}
 	return shoot.Label
 }

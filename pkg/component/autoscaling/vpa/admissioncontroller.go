@@ -75,7 +75,7 @@ func (v *vpa) admissionControllerResourceConfigs() component.ResourceConfigs {
 		{Obj: serviceMonitor, Class: component.Runtime, MutateFn: func() { v.reconcileAdmissionControllerServiceMonitor(serviceMonitor) }},
 	}
 
-	if v.values.ClusterType == component.ClusterTypeSeed {
+	if v.values.ClusterType == component.ClusterTypeSeed || v.values.ClusterType == component.ClusterTypeGarden {
 		serviceAccount := v.emptyServiceAccount(admissionController)
 		configs = append(configs,
 			component.ResourceConfig{Obj: serviceAccount, Class: component.Application, MutateFn: func() { v.reconcileAdmissionControllerServiceAccount(serviceAccount) }},

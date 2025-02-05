@@ -186,7 +186,7 @@ func (v *vpa) reconcileGeneralMutatingWebhookConfiguration(mutatingWebhookConfig
 		}
 	)
 
-	if v.values.ClusterType == component.ClusterTypeSeed {
+	if v.values.ClusterType == component.ClusterTypeSeed || v.values.ClusterType == component.ClusterTypeGarden {
 		clientConfig.Service = &admissionregistrationv1.ServiceReference{
 			Name:      vpaconstants.AdmissionControllerServiceName,
 			Namespace: v.namespace,
