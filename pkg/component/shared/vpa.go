@@ -30,6 +30,7 @@ func NewVerticalPodAutoscaler(
 	priorityClassNameAdmissionController string,
 	priorityClassNameRecommender string,
 	priorityClassNameUpdater string,
+	clusterType component.ClusterType,
 ) (
 	component.DeployWaiter,
 	error,
@@ -54,7 +55,7 @@ func NewVerticalPodAutoscaler(
 		gardenNamespaceName,
 		secretsManager,
 		vpa.Values{
-			ClusterType:              component.ClusterTypeSeed,
+			ClusterType:              clusterType,
 			Enabled:                  enabled,
 			SecretNameServerCA:       secretNameServerCA,
 			RuntimeKubernetesVersion: runtimeVersion,
