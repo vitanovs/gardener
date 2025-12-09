@@ -347,9 +347,6 @@ func (o *otelCollector) openTelemetryCollector(namespace, lokiEndpoint, genericT
 								"grpc": map[string]any{
 									"endpoint": "127.0.0.1:" + strconv.Itoa(collectorconstants.PushPort),
 								},
-								//"http": map[string]any{
-								//	"endpoint": "127.0.0.1:4318",
-								//},
 							},
 						},
 					},
@@ -395,7 +392,10 @@ func (o *otelCollector) openTelemetryCollector(namespace, lokiEndpoint, genericT
 						"loki": map[string]any{
 							"endpoint": lokiEndpoint,
 						},
-						"stdout/host": map[string]any{},
+						"debug": map[string]any{
+							"verbosity": "detailed",
+						},
+						// TODO: add new Prometheus exporter
 					},
 				},
 				Service: otelv1beta1.Service{
@@ -435,9 +435,9 @@ func (o *otelCollector) openTelemetryCollector(namespace, lokiEndpoint, genericT
 								"batch",
 							},
 						},
-						"metrics/host": {
+						"metrics": {
 							Exporters: []string{
-								"stdout",
+								"debug",
 							},
 							Receivers: []string{
 								"otlp",
@@ -564,6 +564,23 @@ func (o *otelCollector) getIngress(secretName string) *networkingv1.Ingress {
 										Port: networkingv1.ServiceBackendPort{Number: collectorconstants.KubeRBACProxyOTLPReceiverPort},
 									},
 								},
+								Path:     "/opentelemetry.proto.collector.metrics.v1.MetricsService/Export",
+								PathType: ptr.To(networkingv1.PathTypePrefix),
+							}},
+						},
+					},
+				},
+				{
+					Host: o.values.IngressHost,
+					IngressRuleValue: networkingv1.IngressRuleValue{
+						HTTP: &networkingv1.HTTPIngressRuleValue{
+							Paths: []networkingv1.HTTPIngressPath{{
+								Backend: networkingv1.IngressBackend{
+									Service: &networkingv1.IngressServiceBackend{
+										Name: collectorconstants.ServiceName,
+										Port: networkingv1.ServiceBackendPort{Number: collectorconstants.KubeRBACProxyOTLPReceiverPort},
+									},
+								},
 								Path:     collectorconstants.PushEndpoint,
 								PathType: ptr.To(networkingv1.PathTypePrefix),
 							}},
@@ -617,7 +634,7 @@ func (o *otelCollector) getLoggingAgentClusterRole() *rbacv1.ClusterRole {
 				},
 			},
 			{
-				NonResourceURLs: []string{collectorconstants.PushEndpoint},
+				NonResourceURLs: []string{collectorconstants.PushEndpoint, "/opentelemetry.proto.collector.metrics.v1.MetricsService/Export"},
 				Verbs:           []string{"create"},
 			},
 		},
