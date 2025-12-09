@@ -189,8 +189,8 @@ images:
             teamname: 'gardener/logging-maintainers'
   - name: opentelemetry-collector
     sourceRepository: github.com/gardener/opentelemetry-collector
-    repository: europe-docker.pkg.dev/gardener-project/releases/gardener/observability/opentelemetry-collector
-    tag: "v0.0.1"
+    repository: garden.local.gardener.cloud:5001/gardener-project/snapshots/gardener/otel/opentelemetry-collector
+    tag: "v0.0.2-dev-636ec4d-dirty"
   # Monitoring
   - name: prometheus-operator
     sourceRepository: github.com/prometheus-operator/prometheus-operator

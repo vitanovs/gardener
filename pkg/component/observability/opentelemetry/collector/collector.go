@@ -347,6 +347,9 @@ func (o *otelCollector) openTelemetryCollector(namespace, lokiEndpoint, genericT
 								"grpc": map[string]any{
 									"endpoint": "127.0.0.1:" + strconv.Itoa(collectorconstants.PushPort),
 								},
+								//"http": map[string]any{
+								//	"endpoint": "127.0.0.1:4318",
+								//},
 							},
 						},
 					},
@@ -392,6 +395,7 @@ func (o *otelCollector) openTelemetryCollector(namespace, lokiEndpoint, genericT
 						"loki": map[string]any{
 							"endpoint": lokiEndpoint,
 						},
+						"stdout/host": map[string]any{},
 					},
 				},
 				Service: otelv1beta1.Service{
@@ -428,6 +432,17 @@ func (o *otelCollector) openTelemetryCollector(namespace, lokiEndpoint, genericT
 							},
 							Processors: []string{
 								"resource/vali",
+								"batch",
+							},
+						},
+						"metrics/host": {
+							Exporters: []string{
+								"stdout",
+							},
+							Receivers: []string{
+								"otlp",
+							},
+							Processors: []string{
 								"batch",
 							},
 						},

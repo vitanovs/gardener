@@ -11,6 +11,17 @@ extensions:
     filename: {{ .pathAuthToken }}
 
 receivers:
+  hostmetrics/agent:
+    collection_interval: 10s
+    scrapers:
+      cpu:
+      memory:
+      load:
+      disk:
+      filesystem:
+      network:
+      paging:
+      processes:
   journald/journal:
     start_at: beginning
     storage: file_storage
@@ -90,6 +101,7 @@ processors:
         action: insert
 
 exporters:
+  debug:
   otlp:
     endpoint: {{ .clientURL }}
     auth:
@@ -113,6 +125,10 @@ service:
 
   extensions: [file_storage, bearertokenauth]
   pipelines:
+    metrics/host:
+      receivers: [hostmetrics/agent]
+      processors: [batch]
+      exporters: [otlp, debug]
     logs/journal:
       receivers: [journald/journal]
       processors: [resource/journal, batch]
