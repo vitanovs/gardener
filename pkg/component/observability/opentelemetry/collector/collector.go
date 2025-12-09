@@ -285,25 +285,37 @@ func (o *otelCollector) serviceMonitor() *monitoringv1.ServiceMonitor {
 		ObjectMeta: monitoringutils.ConfigObjectMeta(serviceMonitorName, o.namespace, shoot.Label),
 		Spec: monitoringv1.ServiceMonitorSpec{
 			Selector: metav1.LabelSelector{MatchLabels: getLabels()},
-			Endpoints: []monitoringv1.Endpoint{{
-				// Value must be "monitoring" since the OpenTelemetry operator creates a 'monitoring' service
-				// that exposes the port via the name 'monitoring'. This currently cannot be configured with a different name.
-				Port: "monitoring",
-				RelabelConfigs: []monitoringv1.RelabelConfig{
-					// This service monitor is targeting the logging service. Without explicitly overriding the
-					// job label, prometheus-operator would choose job=logging (service name).
-					{
-						Action:      "replace",
-						Replacement: ptr.To("opentelemetry-collector"),
-						TargetLabel: "job",
+			Endpoints: []monitoringv1.Endpoint{
+				{
+					// Value must be "monitoring" since the OpenTelemetry operator creates a 'monitoring' service
+					// that exposes the port via the name 'monitoring'. This currently cannot be configured with a different name.
+					Port: "monitoring",
+					RelabelConfigs: []monitoringv1.RelabelConfig{
+						// This service monitor is targeting the logging service. Without explicitly overriding the
+						// job label, prometheus-operator would choose job=logging (service name).
+						{
+							Action:      "replace",
+							Replacement: ptr.To("opentelemetry-collector"),
+							TargetLabel: "job",
+						},
+						{
+							Action: "labelmap",
+							Regex:  `__meta_kubernetes_service_label_(.+)`,
+						},
 					},
-					{
-						Action: "labelmap",
-						Regex:  `__meta_kubernetes_service_label_(.+)`,
+					MetricRelabelConfigs: monitoringutils.StandardMetricRelabelConfig(allowedMetrics...),
+				},
+				{
+					Port: "prometheus",
+					RelabelConfigs: []monitoringv1.RelabelConfig{
+						{
+							SourceLabels: []monitoringv1.LabelName{"service"},
+							Action:       "drop",
+							Regex:        ".*-headless",
+						},
 					},
 				},
-				MetricRelabelConfigs: monitoringutils.StandardMetricRelabelConfig(allowedMetrics...),
-			}},
+			},
 		},
 	}
 }
@@ -318,7 +330,7 @@ func (o *otelCollector) openTelemetryCollector(namespace, lokiEndpoint, genericT
 			// Currently, there is no other way to define the annotations on the service other than adding them to the OpenTelemetryCollector resource.
 			// All annotations that exist here will be passed down to every resource that gets created by the OpenTelemetry Operator.
 			Annotations: map[string]string{
-				"networking.resources.gardener.cloud/from-all-scrape-targets-allowed-ports": fmt.Sprintf(`[{"protocol":"TCP","port":%d}]`, metricsPort),
+				"networking.resources.gardener.cloud/from-all-scrape-targets-allowed-ports": fmt.Sprintf(`[{"protocol":"TCP","port":%d},{"protocol":"TCP","port":8889}]`, metricsPort),
 			},
 		},
 		Spec: otelv1beta1.OpenTelemetryCollectorSpec{
@@ -395,7 +407,9 @@ func (o *otelCollector) openTelemetryCollector(namespace, lokiEndpoint, genericT
 						"debug": map[string]any{
 							"verbosity": "detailed",
 						},
-						// TODO: add new Prometheus exporter
+						"prometheus": map[string]any{
+							"endpoint": "0.0.0.0:8889",
+						},
 					},
 				},
 				Service: otelv1beta1.Service{
@@ -438,6 +452,7 @@ func (o *otelCollector) openTelemetryCollector(namespace, lokiEndpoint, genericT
 						"metrics": {
 							Exporters: []string{
 								"debug",
+								"prometheus",
 							},
 							Receivers: []string{
 								"otlp",

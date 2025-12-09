@@ -15,6 +15,12 @@ receivers:
     collection_interval: 10s
     scrapers:
       cpu:
+      disk:
+      load:
+      filesystem:
+      memory:
+      network:
+      system:
   journald/journal:
     start_at: beginning
     storage: file_storage
