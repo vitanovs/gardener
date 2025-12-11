@@ -421,6 +421,16 @@ func (o *otelCollector) openTelemetryCollector(namespace, lokiEndpoint, genericT
 							"collection_interval": 10 * time.Second,
 							"auth_type":           "kubeConfig",
 						},
+						"k8sobjects": map[string]any{
+							"auth_type": "kubeConfig",
+							"objects": []map[string]any{
+								{
+									"name":       "pods",
+									"mode":       "watch",
+									"namespaces": "kube-system",
+								},
+							},
+						},
 					},
 				},
 				Processors: &otelv1beta1.AnyConfig{
@@ -428,6 +438,20 @@ func (o *otelCollector) openTelemetryCollector(namespace, lokiEndpoint, genericT
 						"batch": map[string]any{
 							"timeout": "10s",
 						},
+						// "resource/k8sCluster": map[string]any{
+						// 	"attributes": []any{
+						// 		map[string]any{
+						// 			"key":            "nodename",
+						// 			"from_attribute": "k8s.node.name",
+						// 			"action":         "insert",
+						// 		},
+						// 		map[string]any{
+						// 			"key":            "container_name",
+						// 			"from_attribute": "k8s.container.name",
+						// 			"action":         "insert",
+						// 		},
+						// 	},
+						// },
 						"resource/vali": map[string]any{
 							"attributes": []any{
 								map[string]any{
@@ -469,6 +493,9 @@ func (o *otelCollector) openTelemetryCollector(namespace, lokiEndpoint, genericT
 						},
 						"prometheus": map[string]any{
 							"endpoint": "0.0.0.0:8889",
+							"resource_to_telemetry_conversion": map[string]any{
+								"enabled": true,
+							},
 						},
 					},
 				},
@@ -503,23 +530,34 @@ func (o *otelCollector) openTelemetryCollector(namespace, lokiEndpoint, genericT
 							},
 							Receivers: []string{
 								"otlp",
+								"k8sobjects",
 							},
 							Processors: []string{
 								"resource/vali",
 								"batch",
 							},
 						},
-						"metrics": {
+						"metrics/otlp": {
 							Exporters: []string{
-								"debug",
 								"prometheus",
 							},
 							Receivers: []string{
 								"otlp",
+							},
+							Processors: []string{
+								"batch",
+							},
+						},
+						"metrics/k8sCluster": {
+							Exporters: []string{
+								"prometheus",
+							},
+							Receivers: []string{
 								"k8s_cluster",
 							},
 							Processors: []string{
 								"batch",
+								// "resource/k8sCluster",
 							},
 						},
 					},
