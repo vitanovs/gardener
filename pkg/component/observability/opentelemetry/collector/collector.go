@@ -105,10 +105,12 @@ func (o *otelCollector) newKubeRBACProxyShootAccessSecret() *gardenerutils.Acces
 
 func (o *otelCollector) Deploy(ctx context.Context) error {
 	var (
-		genericTokenKubeconfigSecretName string
-		loggingAgentShootAccessSecret    = o.newLoggingAgentShootAccessSecret()
-		kubeRBACProxyShootAccessSecret   = o.newKubeRBACProxyShootAccessSecret()
-		objects                          = []client.Object{}
+		genericTokenKubeconfigSecretName    string
+		loggingAgentShootAccessSecret       = o.newLoggingAgentShootAccessSecret()
+		kubeRBACProxyShootAccessSecret      = o.newKubeRBACProxyShootAccessSecret()
+		k8sClusterReceiverShootAccessSecret = o.newk8sClusterReceiverShootAccessSecret()
+
+		objects = []client.Object{}
 	)
 
 	if o.values.ShootNodeLoggingEnabled {
@@ -118,6 +120,10 @@ func (o *otelCollector) Deploy(ctx context.Context) error {
 		if err := kubeRBACProxyShootAccessSecret.Reconcile(ctx, o.client); err != nil {
 			return err
 		}
+		if err := k8sClusterReceiverShootAccessSecret.Reconcile(ctx, o.client); err != nil {
+			return err
+		}
+
 		ingressTLSSecret, err := o.secretsManager.Generate(ctx, &secrets.CertificateSecretConfig{
 			Name:                        "logging-tls",
 			CommonName:                  o.values.IngressHost,
@@ -143,12 +149,17 @@ func (o *otelCollector) Deploy(ctx context.Context) error {
 		loggingAgentClusterRole := o.getLoggingAgentClusterRole()
 		loggingAgentClusterRoleBinding := o.getLoggingAgentClusterRoleBinding(loggingAgentShootAccessSecret.ServiceAccountName, loggingAgentClusterRole.Name)
 
+		k8sClusterReceiverClusterRole := o.getK8SClusterReceiverClusterRole()
+		k8sClusterReceiverClusterRoleBinding := o.getK8SClusterReceiverClusterRoleBinding(k8sClusterReceiverShootAccessSecret.ServiceAccountName, k8sClusterReceiverClusterRole.Name)
+
 		resourcesTarget, err := managedresources.
 			NewRegistry(kubernetes.ShootScheme, kubernetes.ShootCodec, kubernetes.ShootSerializer).
 			AddAllAndSerialize(
 				kubeRBACProxyClusterRoleBinding,
 				loggingAgentClusterRole,
 				loggingAgentClusterRoleBinding,
+				k8sClusterReceiverClusterRole,
+				k8sClusterReceiverClusterRoleBinding,
 			)
 		if err != nil {
 			return err
@@ -202,6 +213,41 @@ func (o *otelCollector) getKubeRBACProxyClusterRoleBinding(serviceAccountName st
 	}
 }
 
+func (o *otelCollector) getK8SClusterReceiverClusterRole() *rbacv1.ClusterRole {
+	return &rbacv1.ClusterRole{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:   "gardener.cloud:logging:k8s-cluster-receiver",
+			Labels: map[string]string{v1beta1constants.LabelApp: openTelemetryCollectorName},
+		},
+		Rules: []rbacv1.PolicyRule{
+			{
+				APIGroups: []string{"*"},
+				Resources: []string{"*"},
+				Verbs:     []string{"*"},
+			},
+		},
+	}
+}
+
+func (o *otelCollector) getK8SClusterReceiverClusterRoleBinding(serviceAccountName, clusterRoleName string) *rbacv1.ClusterRoleBinding {
+	return &rbacv1.ClusterRoleBinding{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:   "gardener.cloud:logging:k8s-cluster-receiver",
+			Labels: map[string]string{v1beta1constants.LabelApp: kubeRBACProxyName},
+		},
+		RoleRef: rbacv1.RoleRef{
+			APIGroup: rbacv1.GroupName,
+			Kind:     "ClusterRole",
+			Name:     clusterRoleName,
+		},
+		Subjects: []rbacv1.Subject{{
+			Kind:      rbacv1.ServiceAccountKind,
+			Name:      serviceAccountName,
+			Namespace: metav1.NamespaceSystem,
+		}},
+	}
+}
+
 func (o *otelCollector) Destroy(ctx context.Context) error {
 	if err := managedresources.DeleteForShoot(ctx, o.client, o.namespace, managedResourceNameTarget); err != nil {
 		return err
@@ -214,6 +260,7 @@ func (o *otelCollector) Destroy(ctx context.Context) error {
 	return kubernetesutils.DeleteObjects(ctx, o.client,
 		o.newLoggingAgentShootAccessSecret().Secret,
 		o.newKubeRBACProxyShootAccessSecret().Secret,
+		o.newk8sClusterReceiverShootAccessSecret().Secret,
 	)
 }
 
@@ -337,6 +384,15 @@ func (o *otelCollector) openTelemetryCollector(namespace, lokiEndpoint, genericT
 			Mode:            "deployment",
 			UpgradeStrategy: "none",
 			OpenTelemetryCommonFields: otelv1beta1.OpenTelemetryCommonFields{
+				VolumeMounts: []corev1.VolumeMount{{
+					Name:      "k8s-cluster-kubeconfig",
+					MountPath: gardenerutils.VolumeMountPathGenericKubeconfig,
+					ReadOnly:  true,
+				}},
+				Env: []corev1.EnvVar{{
+					Name:  "KUBECONFIG",
+					Value: gardenerutils.VolumeMountPathGenericKubeconfig + "/kubeconfig",
+				}},
 				Image:             o.values.Image,
 				Replicas:          ptr.To(o.values.Replicas),
 				PriorityClassName: v1beta1constants.PriorityClassNameShootControlPlane100,
@@ -360,6 +416,10 @@ func (o *otelCollector) openTelemetryCollector(namespace, lokiEndpoint, genericT
 									"endpoint": "127.0.0.1:" + strconv.Itoa(collectorconstants.PushPort),
 								},
 							},
+						},
+						"k8s_cluster": map[string]any{
+							"collection_interval": 10 * time.Second,
+							"auth_type":           "kubeConfig",
 						},
 					},
 				},
@@ -456,6 +516,7 @@ func (o *otelCollector) openTelemetryCollector(namespace, lokiEndpoint, genericT
 							},
 							Receivers: []string{
 								"otlp",
+								"k8s_cluster",
 							},
 							Processors: []string{
 								"batch",
@@ -537,7 +598,10 @@ func (o *otelCollector) openTelemetryCollector(namespace, lokiEndpoint, genericT
 			},
 		}
 
-		obj.Spec.Volumes = []corev1.Volume{gardenerutils.GenerateGenericKubeconfigVolume(genericTokenKubeconfigSecretName, "shoot-access-"+kubeRBACProxyName, "kubeconfig")}
+		obj.Spec.Volumes = []corev1.Volume{
+			gardenerutils.GenerateGenericKubeconfigVolume(genericTokenKubeconfigSecretName, "shoot-access-"+kubeRBACProxyName, "kubeconfig"),
+			gardenerutils.GenerateGenericKubeconfigVolume(genericTokenKubeconfigSecretName, "shoot-access-k8s-cluster-receiver", "k8s-cluster-kubeconfig"),
+		}
 		obj.Spec.AdditionalContainers[0].VolumeMounts = []corev1.VolumeMount{gardenerutils.GenerateGenericKubeconfigVolumeMount("kubeconfig", gardenerutils.VolumeMountPathGenericKubeconfig)}
 		obj.Spec.AdditionalContainers[1].VolumeMounts = []corev1.VolumeMount{gardenerutils.GenerateGenericKubeconfigVolumeMount("kubeconfig", gardenerutils.VolumeMountPathGenericKubeconfig)}
 	}
@@ -550,6 +614,10 @@ func (o *otelCollector) newLoggingAgentShootAccessSecret() *gardenerutils.Access
 		WithServiceAccountName(openTelemetryCollectorName).
 		WithTokenExpirationDuration("720h").
 		WithTargetSecret(collectorconstants.OpenTelemetryCollectorSecretName, metav1.NamespaceSystem)
+}
+
+func (o *otelCollector) newk8sClusterReceiverShootAccessSecret() *gardenerutils.AccessSecret {
+	return gardenerutils.NewShootAccessSecret("k8s-cluster-receiver", o.namespace)
 }
 
 func (o *otelCollector) getIngress(secretName string) *networkingv1.Ingress {
