@@ -14,6 +14,7 @@ import (
 	v1beta1constants "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
 	"github.com/gardener/gardener/pkg/component/extensions/operatingsystemconfig/original/components"
+	"github.com/gardener/gardener/pkg/utils"
 	kubernetesutils "github.com/gardener/gardener/pkg/utils/kubernetes"
 )
 
@@ -34,11 +35,16 @@ const (
 	// its internal metrics.
 	MetricsPort = 8888
 
-	openTelemetryCollectorBinaryPath     = v1beta1constants.OperatingSystemConfigFilePathBinaries + "/opentelemetry-collector"
-	openTelemetryCollectorKubeconfigPath = PathDirectory + "/kubeconfig"
+	openTelemetryCollectorBinaryPath         = v1beta1constants.OperatingSystemConfigFilePathBinaries + "/opentelemetry-collector"
+	openTelemetryCollectorKubeconfigPath     = PathDirectory + "/kubeconfig"
+	openTelemetryKubeletStatsReceiverCA      = PathDirectory + "/kubelet-ca.crt"
+	openTelemetryKubeletStatsReceiverCert    = PathDirectory + "/kubelet-tls.crt"
+	openTelemetryKubeletStatsReceiverCertKey = PathDirectory + "/kubelet-tls.key"
 )
 
-type component struct{}
+type component struct {
+	ctx components.Context
+}
 
 // New returns a new opentelemetry-collector component.
 func New() *component {
@@ -51,7 +57,7 @@ func (component) Name() string {
 }
 
 // Config returns the units and files for the opentelemetry-collector component.
-func (component) Config(ctx components.Context) ([]extensionsv1alpha1.Unit, []extensionsv1alpha1.File, error) {
+func (c *component) Config(ctx components.Context) ([]extensionsv1alpha1.Unit, []extensionsv1alpha1.File, error) {
 	var (
 		units []extensionsv1alpha1.Unit
 		files []extensionsv1alpha1.File
@@ -95,6 +101,33 @@ func (component) Config(ctx components.Context) ([]extensionsv1alpha1.Unit, []ex
 				// Plain text
 				Encoding: "",
 				Data:     string(raw),
+			},
+		},
+	}, extensionsv1alpha1.File{
+		Path:        openTelemetryKubeletStatsReceiverCert,
+		Permissions: ptr.To[uint32](0600),
+		Content: extensionsv1alpha1.FileContent{
+			SecretRef: &extensionsv1alpha1.FileContentSecretRef{
+				Name:    ctx.KubeletClientCertSecretName,
+				DataKey: "tls.crt",
+			},
+		},
+	}, extensionsv1alpha1.File{
+		Path:        openTelemetryKubeletStatsReceiverCertKey,
+		Permissions: ptr.To[uint32](0600),
+		Content: extensionsv1alpha1.FileContent{
+			SecretRef: &extensionsv1alpha1.FileContentSecretRef{
+				Name:    ctx.KubeletClientCertSecretName,
+				DataKey: "tls.key",
+			},
+		},
+	}, extensionsv1alpha1.File{
+		Path:        openTelemetryKubeletStatsReceiverCA,
+		Permissions: ptr.To[uint32](0600),
+		Content: extensionsv1alpha1.FileContent{
+			Inline: &extensionsv1alpha1.FileContentInline{
+				Encoding: "b64",
+				Data:     utils.EncodeBase64(ctx.KubeletCABundle),
 			},
 		},
 	})

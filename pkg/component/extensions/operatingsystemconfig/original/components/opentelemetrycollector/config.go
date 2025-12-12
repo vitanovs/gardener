@@ -40,10 +40,13 @@ func getOpentelemetryCollectorConfigurationFile(ctx components.Context) (extensi
 
 	var config bytes.Buffer
 	if err := tplOpenTelemetryCollector.Execute(&config, map[string]any{
-		"clientURL":     ctx.OpenTelemetryCollectorIngressHostName + ":443",
-		"pathCACert":    PathCACert,
-		"pathAuthToken": PathAuthToken,
-		"metricsPort":   MetricsPort,
+		"clientURL":      ctx.OpenTelemetryCollectorIngressHostName + ":443",
+		"pathCACert":     PathCACert,
+		"pathAuthToken":  PathAuthToken,
+		"metricsPort":    MetricsPort,
+		"kubeletCA":      openTelemetryKubeletStatsReceiverCA,
+		"kubeletCertKey": openTelemetryKubeletStatsReceiverCertKey,
+		"kubeletCert":    openTelemetryKubeletStatsReceiverCert,
 	}); err != nil {
 		return extensionsv1alpha1.File{}, err
 	}

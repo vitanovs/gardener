@@ -11,6 +11,15 @@ extensions:
     filename: {{ .pathAuthToken }}
 
 receivers:
+  kubeletstats:
+    collection_interval: 20s
+    initial_delay: 1s
+    auth_type: "tls"
+    ca_file: {{ .kubeletCA }}
+    key_file: {{ .kubeletCertKey }}
+    cert_file: {{ .kubeletCert }}
+    endpoint: "https://127.0.0.1:10250"
+    insecure_skip_verify: true
   hostmetrics:
     collection_interval: 10s
     scrapers:
@@ -126,7 +135,7 @@ service:
   extensions: [file_storage, bearertokenauth]
   pipelines:
     metrics:
-      receivers: [hostmetrics]
+      receivers: [hostmetrics, kubeletstats]
       processors: [resource/journal, batch]
       exporters: [otlp, debug]
     logs/journal:

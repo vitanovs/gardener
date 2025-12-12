@@ -32,6 +32,7 @@ type Context struct {
 	NodeLabels                              map[string]string
 	NodeMonitorGracePeriod                  metav1.Duration
 	KubeletCABundle                         []byte
+	KubeletClientCertSecretName             string
 	KubeletCLIFlags                         ConfigurableKubeletCLIFlags
 	KubeletConfigParameters                 ConfigurableKubeletConfigParameters
 	KubeletDataVolumeName                   *string

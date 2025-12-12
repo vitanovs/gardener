@@ -42,6 +42,7 @@ const (
 	// certificate generated for a seed cluster.
 	SecretNameCASeed = "ca-seed"
 
+	SecretNameKubeApiserverToKubelet = "kube-apiserver-kubelet"
 	// SecretNameCloudProvider is a constant for the name of a Kubernetes secret object that contains the provider
 	// specific credentials that shall be used to create/delete the shoot.
 	SecretNameCloudProvider = "cloudprovider"

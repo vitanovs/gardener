@@ -40,11 +40,11 @@ import (
 )
 
 const (
-	secretNameKubeAPIServerToKubelet = "kube-apiserver-kubelet"           // #nosec G101 -- No credential.
-	secretNameKubeAggregator         = "kube-aggregator"                  // #nosec G101 -- No credential.
-	secretNameHTTPProxyClient        = "kube-apiserver-http-proxy-client" // #nosec G101 -- No credential.
-	secretNameHTTPProxy              = "kube-apiserver-http-proxy"        // #nosec G101 -- No credential.
-	secretNameHAVPNSeedClient        = "vpn-seed-client"                  // #nosec G101 -- No credential.
+	secretNameKubeAPIServerToKubelet = v1beta1constants.SecretNameKubeApiserverToKubelet // #nosec G101 -- No credential.
+	secretNameKubeAggregator         = "kube-aggregator"                                 // #nosec G101 -- No credential.
+	secretNameHTTPProxyClient        = "kube-apiserver-http-proxy-client"                // #nosec G101 -- No credential.
+	secretNameHTTPProxy              = "kube-apiserver-http-proxy"                       // #nosec G101 -- No credential.
+	secretNameHAVPNSeedClient        = "vpn-seed-client"                                 // #nosec G101 -- No credential.
 
 	// ContainerNameKubeAPIServer is the name of the kube-apiserver container.
 	ContainerNameKubeAPIServer     = "kube-apiserver"

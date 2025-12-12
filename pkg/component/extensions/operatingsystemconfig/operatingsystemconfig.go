@@ -692,6 +692,11 @@ func (o *operatingSystemConfig) newDeployer(version int, osc *extensionsv1alpha1
 		return deployer{}, fmt.Errorf("secret %q not found", v1beta1constants.SecretNameCAKubelet)
 	}
 
+	kubeAPIServerToKubeletSecret, found := o.secretsManager.Get(v1beta1constants.SecretNameKubeApiserverToKubelet)
+	if !found {
+		return deployer{}, fmt.Errorf("secret %q not found", v1beta1constants.SecretNameKubeApiserverToKubelet)
+	}
+
 	kubeletConfigParameters := components.KubeletConfigParametersFromCoreV1beta1KubeletConfig(o.values.KubeletConfig)
 	kubeletCLIFlags := components.KubeletCLIFlagsFromCoreV1beta1KubeletConfig(o.values.KubeletConfig)
 	if worker.Kubernetes != nil && worker.Kubernetes.Kubelet != nil {
@@ -758,6 +763,7 @@ func (o *operatingSystemConfig) newDeployer(version int, osc *extensionsv1alpha1
 		criName:                                 criName,
 		images:                                  images,
 		kubeletCABundle:                         kubeletCASecret.Data[secretsutils.DataKeyCertificateBundle],
+		kubeletClientSecretName:                 kubeAPIServerToKubeletSecret.Name,
 		kubeletConfig:                           kubeletConfig,
 		kubeletConfigParameters:                 kubeletConfigParameters,
 		kubeletCLIFlags:                         kubeletCLIFlags,
@@ -829,6 +835,7 @@ type deployer struct {
 	criName                                     extensionsv1alpha1.CRIName
 	images                                      map[string]*imagevectorutils.Image
 	kubeletCABundle                             []byte
+	kubeletClientSecretName                     string
 	kubeletConfig                               *gardencorev1beta1.KubeletConfig
 	kubeletConfigParameters                     components.ConfigurableKubeletConfigParameters
 	kubeletCLIFlags                             components.ConfigurableKubeletCLIFlags
@@ -874,6 +881,7 @@ func (d *deployer) deploy(ctx context.Context, operation string) (extensionsv1al
 		NodeLabels:                              gardenerutils.NodeLabelsForWorkerPool(d.worker, d.nodeLocalDNSEnabled, d.key),
 		NodeMonitorGracePeriod:                  d.nodeMonitorGracePeriod,
 		KubeletCABundle:                         d.kubeletCABundle,
+		KubeletClientCertSecretName:             d.kubeletClientSecretName,
 		KubeletConfigParameters:                 d.kubeletConfigParameters,
 		KubeletCLIFlags:                         d.kubeletCLIFlags,
 		KubeletDataVolumeName:                   d.kubeletDataVolumeName,
