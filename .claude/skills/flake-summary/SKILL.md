@@ -11,13 +11,11 @@ metadata:
 
 # Flake Summary
 
+## Purpose
+
 This skill generates a summerized report for a given flaky test by analzing and extracting data from prow.gardener.cloud failed jobs. The following list outlines the basic rules that apply to the generated report:
 
-- The report should be in Markdown format and should follow the Google's style guide: https://google.github.io/styleguide/docguide/style.html
-- The report should be a summary, __not__ a detailed root cause analysis.
-- Use Markdown tables for listing items in the report.
-
-## Summarisation process
+## Process
 
 1. Find the Gardener component that is relevant for the failing flake test.
 2. Extract and list the key error messages from the provided prow.gardener.cloud CI job.
@@ -30,15 +28,16 @@ This skill generates a summerized report for a given flaky test by analzing and 
 # [Report Title]
 
 ## Summary
-[One-paragraph overview of the key findings]]
+[One-paragraph overview of the key findings]
 
 ## Related Test cases
 
-[Table of the releated test case that cause the flake]]
+[Table of the releated test case that cause the flake]
 
 ## Related Gardener Components
 
 [Table of the related components with name, purpose and effect columns]
+[Schema of the relationship between the affected components]
 
 ## Related Pull Requests
 
@@ -48,3 +47,18 @@ This skill generates a summerized report for a given flaky test by analzing and 
 
 [Links to all referrences used in the report]
 ```
+
+## Core capabilities
+
+- Parse logs from prow.gardener.cloud and extract Gardener component details.
+- Look up https://github.com/gardener/gardener merged Pull Requests for changes related to specific Gardener component.
+- Find relations between Gardener components and explain components affect each other.
+- Ability to sort Pull Requests by their `Merged Date` value.
+
+## Output format
+
+- Use `Markdown` format and follow Google's style guide: https://google.github.io/styleguide/docguide/style.html.
+- Use proper `json` or `yaml` formatting when reporting manifest snippets.
+- Use proper `Golang` formatting when reporting source code snippets.
+  - Provide complete runnable code examples with comments on each key step.
+- Use code blocks with language annotations when reporting snippets.
