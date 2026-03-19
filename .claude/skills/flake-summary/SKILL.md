@@ -32,21 +32,45 @@ This skill generates a summerized report for a given flaky test by analzing and 
 
 ## Related Test cases
 
-[Table of the releated test case that cause the flake]
+[
+  Table of the releated test case that cause the flake.
+  Include test name, test description and location in the github.com/gardener/gardener repository.
+  Use the following table structure:
+
+  |  Name | Description | Reference     |
+  |-------|-------------|---------------|
+]
 
 ## Related Gardener Components
 
-[Table of the related components with name, purpose and effect columns]
-[Schema of the relationship between the affected components]
+[
+  Table of the related Gardener components with name, purpose and effect columns.
+  Use the following table structure:
+
+  |  Name | Purpose | Effect     |
+  |-------|---------|------------|
+]
 
 ## Related Pull Requests
 
-[Table of recently merged pull requests that change/update the related Gardener components, sorted by merged date]
+[
+  Table of merged pull requests in github.com/gardener/gardener that are related to the primary component.
+  Pull requests must have a descending order by `mergedAt` date.
+  Pull requests must be merged no longer than a month from the prow job execution.
+]
 
 ## References
 
-[Links to all referrences used in the report]
+[
+  Links to all referrences used in the report.
+  Links to https://gardener.cloud documentation related to the extracted components.
+]
 ```
+
+## Constraints
+
+- Strictly follow the provided Report Structure and do not include additional sections.
+- All `markdown` tables must be with equal width. Use the widest table and adjust the smaller ones to match it's width.
 
 ## Core capabilities
 
